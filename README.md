@@ -1,15 +1,10 @@
-```markdown
 # Ontology-Enhanced Reinforcement Learning for Goalkeeper Simulation
 
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
-- [Architecture](#architecture)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Training Agents](#training-agents)
-  - [Comparing Agents](#comparing-agents)
-  - [Visualizing Agents](#visualizing-agents)
 - [Ontology Details](#ontology-details)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
@@ -33,8 +28,6 @@ Two agents are implemented and compared:
 - **Extensible Design**: Modular codebase allowing for easy extensions and enhancements.
 
 ## Architecture
-
-![Architecture Diagram](https://via.placeholder.com/600x300)
 
 1. **Environment (`ping_pong_env.py`)**: Defines the game dynamics, agent and ball positions, actions, and rewards.
 2. **Ontology (`ontology_definition.py`)**: Specifies the ontology structure using `owlready2`, defining properties like ball shape and speed.
