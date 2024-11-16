@@ -1,5 +1,9 @@
 # Ontology-Enhanced Reinforcement Learning for Goalkeeper Simulation
 
+### Ontology-Enhanced Q-Learning Agent
+
+![Ontology-Enhanced Agent Performance](ontology_agent.gif)
+
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
