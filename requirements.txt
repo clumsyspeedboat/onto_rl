@@ -1,0 +1,4 @@
+gym
+owlready2
+numpy
+matplotlib
