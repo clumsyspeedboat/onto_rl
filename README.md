@@ -1,27 +1,9 @@
-<<<<<<< HEAD
 # Ontology-Enhanced Q-Learning for Ping Pong Simulation
 
 <div align="center">
   <img src="assets/standard_agent_performance.gif" alt="Standard Agent Performance" width="45%" />
   <img src="assets/ontology_agent_performance.gif" alt="Ontology-Enhanced Agent Performance" width="45%" />
 </div>
-=======
-# Ontology-Enhanced Reinforcement Learning for Goalkeeper Simulation
-
-### Ontology-Enhanced Q-Learning Agent
-
-![Ontology-Enhanced Agent Performance](ontology_agent.gif)
-
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Ontology Details](#ontology-details)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [Acknowledgements](#acknowledgements)
->>>>>>> 85b60f02796c521d49612fdd95b49bb2e3724a5c
 
 ## Overview
 
@@ -29,29 +11,10 @@ This project implements a Q-Learning-based reinforcement learning agent to play 
 
 ## Features
 
-<<<<<<< HEAD
 - **Standard Q-Learning Agent:** Learns to intercept the ball without additional knowledge.
 - **Ontology-Enhanced Agent:** Utilizes an ontology to understand the environment better, leading to improved performance.
 - **Visualization:** Generates performance comparison plots and animated GIFs showcasing agent behaviors.
 - **Logging:** Detailed logs for monitoring training and testing processes.
-=======
-- **Custom Gym Environment**: Simulates a goalkeeper scenario with vertical agent movement and horizontally moving balls.
-- **Ontology Integration**: Uses OWL ontologies to provide agents with structured knowledge about the game entities.
-- **Q-Learning Agents**: Implements both standard and ontology-enhanced Q-Learning agents.
-- **Training and Comparison**: Scripts to train agents and compare their performances.
-- **Visualization**: Generates animated GIFs to visualize agent behaviors during test episodes.
-- **Extensible Design**: Modular codebase allowing for easy extensions and enhancements.
-
-## Architecture
-
-1. **Environment (`ping_pong_env.py`)**: Defines the game dynamics, agent and ball positions, actions, and rewards.
-2. **Ontology (`ontology_definition.py`)**: Specifies the ontology structure using `owlready2`, defining properties like ball shape and speed.
-3. **Agents**:
-   - **Standard Agent (`q_learning_agent.py`)**: Basic Q-Learning implementation.
-   - **Ontology-Enhanced Agent (`ontology_enhanced_agent.py`)**: Q-Learning agent utilizing ontology-derived knowledge.
-4. **Training Script (`compare_agents.py`)**: Trains both agents and compares their performances.
-5. **Visualization (`visualize_agents.py`)**: Creates animations of agent behaviors and exports them as GIFs.
->>>>>>> 85b60f02796c521d49612fdd95b49bb2e3724a5c
 
 ## Installation
 
@@ -147,19 +110,5 @@ paths:
 
 ## Logging
 
-Logs are saved to `onto_rl.log` in the "ontology/" directory, providing detailed information about the training and testing processes.
-
-<<<<<<< HEAD
+Logs are saved to `onto_rl.log` in the project root directory, providing detailed information about the training and testing processes.
 ```
-=======
-
-## Acknowledgements
-
-- **OpenAI Gym**: For providing the RL environment framework.
-- **Matplotlib**: For visualization and animation capabilities.
-- **OWLReady2**: For ontology management in Python.
-- **Pillow**: For image processing and GIF creation.
-
----
-```
->>>>>>> 85b60f02796c521d49612fdd95b49bb2e3724a5c
