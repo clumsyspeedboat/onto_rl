@@ -1,0 +1,13 @@
+# config.yaml
+
+grid_size: 10
+episodes: 2000
+test_episodes: 5
+moving_average_window: 100
+
+# Paths
+paths:
+  ontology: "./ontology/pingpong.owl"
+  models: "./models"
+  assets: "./assets"
+  logs: "./logs"

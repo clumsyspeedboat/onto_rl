@@ -1,4 +1,6 @@
 gym
-owlready2
 numpy
 matplotlib
+owlready2
+pillow
+pyyaml

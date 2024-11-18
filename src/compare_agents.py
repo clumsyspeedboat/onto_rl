@@ -1,41 +1,35 @@
-# main.py
+# src/compare_agents.py
 
 import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import pickle
-import logging
-import yaml
-from pathlib import Path
-from owlready2 import get_ontology
-from matplotlib import animation
-
-# Add src directory to sys.path for module imports
-script_dir = Path(__file__).parent.resolve()
-src_dir = script_dir / 'src'
-sys.path.append(str(src_dir))
-
 from ping_pong_env import PingPongEnv
 from q_learning_agent import QLearningAgent
 from ontology_enhanced_agent import OntologyEnhancedAgent
 from ontology_definition import create_ontology
-from visualize_agents import create_animation, run_test_episode, load_agents, load_config
+import pickle
+import logging
+import yaml
 
-
-def moving_average(data, window_size=100):
+def load_config(config_path):
     """
-    Compute moving average to smooth the plot.
+    Load configuration from a YAML file.
 
     Parameters:
-    - data (list): List of numerical values.
-    - window_size (int): The size of the moving window.
+    - config_path (str): Path to the configuration file.
 
     Returns:
-    - numpy.ndarray: Smoothed data.
+    - config (dict): Configuration parameters.
     """
-    return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
-
+    try:
+        with open(config_path, 'r') as file:
+            config = yaml.safe_load(file)
+        logging.info(f"Configuration loaded from {config_path}")
+        return config
+    except Exception as e:
+        logging.error(f"Failed to load configuration: {e}")
+        sys.exit(1)
 
 def train_agent(agent, env, episodes, use_ontology=False):
     """
@@ -96,48 +90,44 @@ def train_agent(agent, env, episodes, use_ontology=False):
             logging.info(f"Episode {episode}: Total Reward: {total_reward}, Steps: {step_count}, Epsilon: {agent.epsilon:.4f}")
     return rewards, steps
 
-
 def main():
     """
-    Main function to orchestrate training and testing of agents.
+    Main function to train and compare agents.
     """
     # Setup logging
-    log_file_path = script_dir / 'onto_rl.log'
     logging.basicConfig(
-        level=logging.INFO,  # Change to DEBUG for more detailed logs
+        level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(log_file_path),
+            logging.FileHandler("onto_rl.log"),
             logging.StreamHandler(sys.stdout)
         ]
     )
 
     # Load configuration
-    config_path = script_dir / 'config.yaml'
-    config = load_config(str(config_path))
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, '..', 'config.yaml')
+    config = load_config(config_path)
 
     grid_size = config['grid_size']
     episodes = config['episodes']
     test_episodes = config['test_episodes']
     window_size = config['moving_average_window']
 
-    # Define the path to the ontology file from config and ensure the directory exists
-    ontology_path = Path(config['paths']['ontology']).resolve()
-    ontology_dir = ontology_path.parent
-    ontology_dir.mkdir(parents=True, exist_ok=True)
-
     # Ensure ontology exists
-    if not ontology_path.exists():
+    ontology_path = os.path.join(script_dir, '..', 'ontology', 'pingpong.owl')
+    if not os.path.exists(ontology_path):
         logging.info("Ontology not found. Creating ontology...")
         create_ontology()
     else:
         logging.info("Ontology already exists. Skipping creation.")
 
-    # Load the ontology from the local file system by passing the absolute path as a string
+    # Load the ontology
+    from owlready2 import get_ontology
+
     try:
-        logging.info(f"Loading ontology from path: {ontology_path}")
-        onto = get_ontology(str(ontology_path)).load()
-        logging.info("Ontology loaded successfully from local file.")
+        onto = get_ontology("http://example.org/pingpong.owl").load()
+        logging.info("Ontology loaded successfully.")
     except Exception as e:
         logging.error(f"Failed to load ontology: {e}")
         sys.exit(1)
@@ -146,21 +136,18 @@ def main():
     env_with_ontology = PingPongEnv(grid_size=grid_size, use_ontology=True)
     env_without_ontology = PingPongEnv(grid_size=grid_size, use_ontology=False)
 
-    # Retrieve grid_rows dynamically based on grid_size
-    grid_rows = env_with_ontology.grid_rows  # Ensure this attribute exists in PingPongEnv
-
     # Define state sizes
     state_size_standard = (
-        env_without_ontology.observation_space['agent_position'].n,  # e.g., 5 vertical positions
-        env_without_ontology.observation_space['ball_position'].n,   # e.g., 10 horizontal positions
-        env_without_ontology.observation_space['ball_shape'].n       # e.g., 2 ball shapes
+        env_without_ontology.observation_space['agent_position'].n,  # 5 vertical positions
+        env_without_ontology.observation_space['ball_position'].n,   # 10 horizontal positions
+        env_without_ontology.observation_space['ball_shape'].n       # 2 ball shapes
     )
 
     state_size_ontology = (
-        env_with_ontology.observation_space['agent_position'].n,    # e.g., 5 vertical positions
-        env_with_ontology.observation_space['ball_position'].n,     # e.g., 10 horizontal positions
-        env_with_ontology.observation_space['ball_shape'].n,        # e.g., 2 ball shapes
-        grid_rows  # Use the correct grid_rows instead of hardcoding 5
+        env_with_ontology.observation_space['agent_position'].n,    # 5 vertical positions
+        env_with_ontology.observation_space['ball_position'].n,     # 10 horizontal positions
+        env_with_ontology.observation_space['ball_shape'].n,        # 2 ball shapes
+        5                                                        # ball_y_position: 0 to 4
     )
 
     # Initialize agents
@@ -185,16 +172,11 @@ def main():
         epsilon_decay=0.995
     )
 
-    # Define paths for saving Q-tables and plots
-    models_dir = Path(config['paths']['models']).resolve()
-    assets_dir = Path(config['paths']['assets']).resolve()
-    models_dir.mkdir(parents=True, exist_ok=True)
-    assets_dir.mkdir(parents=True, exist_ok=True)
-    standard_qtable_path = models_dir / 'standard_agent_qtable.pkl'
-    ontology_qtable_path = models_dir / 'ontology_agent_qtable.pkl'
-    plot_path = assets_dir / 'agent_performance_comparison.png'
-    gif_standard_path = assets_dir / 'standard_agent_performance.gif'
-    gif_ontology_path = assets_dir / 'ontology_agent_performance.gif'
+    # Define paths for saving Q-tables
+    models_dir = os.path.join(config['paths']['models'])
+    os.makedirs(models_dir, exist_ok=True)
+    standard_qtable_path = os.path.join(models_dir, 'standard_agent_qtable.pkl')
+    ontology_qtable_path = os.path.join(models_dir, 'ontology_agent_qtable.pkl')
 
     # Train Standard Agent
     logging.info("\nTraining the Standard Agent (Without Ontology)...")
@@ -222,11 +204,6 @@ def main():
     plt.plot(range(window_size - 1, episodes), ma_with, label='With Ontology (MA)', color='blue')
     plt.plot(range(window_size - 1, episodes), ma_without, label='Without Ontology (MA)', color='orange')
     plt.legend()
-    # Adjust xlim and ylim for better visualization
-    plt.xlim(0, episodes)
-    min_reward = min(min(rewards_with), min(rewards_without))
-    max_reward = max(max(rewards_with), max(rewards_without))
-    plt.ylim(min_reward - 1, max_reward + 1)
 
     # Steps Plot
     plt.subplot(2, 1, 2)
@@ -243,17 +220,15 @@ def main():
     plt.plot(range(window_size - 1, episodes), ma_steps_with, label='With Ontology (MA)', color='blue')
     plt.plot(range(window_size - 1, episodes), ma_steps_without, label='Without Ontology (MA)', color='orange')
     plt.legend()
-    # Adjust xlim and ylim for better visualization
-    plt.xlim(0, episodes)
-    min_steps = min(min(steps_with), min(steps_without))
-    max_steps = max(max(steps_with), max(steps_without))
-    plt.ylim(min_steps - 1, max_steps + 1)
 
     plt.tight_layout()
 
     # Save plot to assets
+    assets_dir = os.path.join(config['paths']['assets'])
+    os.makedirs(assets_dir, exist_ok=True)
+    plot_path = os.path.join(assets_dir, 'agent_performance_comparison.png')
     plt.savefig(plot_path)
-    logging.info(f"\nPerformance comparison plot saved to {plot_path}")
+    logging.info(f"Performance comparison plot saved to {plot_path}")
     plt.show()
 
     # Save Q-tables
@@ -265,78 +240,45 @@ def main():
         pickle.dump(agent_with_ontology.q_table, f)
     logging.info(f"Ontology-Enhanced Agent Q-table saved to {ontology_qtable_path}")
 
-    # Function to run a test episode and record history
-    def run_test_episode_record_history(agent, env, use_ontology=False):
-        """
-        Run a single test episode and record the history of states.
-
-        Parameters:
-        - agent (QLearningAgent or OntologyEnhancedAgent): The agent to test.
-        - env (PingPongEnv): The environment.
-        - use_ontology (bool): Whether the agent uses ontology.
-
-        Returns:
-        - history (list): Recorded history of states during the episode.
-        """
-        state = env.reset()
+    # Testing both agents
+    logging.info("\nTesting the Standard Agent (Without Ontology)...")
+    for ep in range(1, test_episodes + 1):
+        state = env_without_ontology.reset()
         done = False
-        history = []
-
+        total_reward = 0
+        logging.info(f"Test Episode {ep}:")
         while not done:
-            # Record state with 'ball_y_position'
-            state_record = state.copy()
-            state_record['ball_y_position'] = env.ball_y_position
-            history.append(state_record)
-
-            if use_ontology:
-                agent_pos = state['agent_position']
-                ball_pos = state['ball_position']
-                ball_shape = state['ball_shape']
-                ball_y_pos = env.ball_y_position
-                enriched_state = (agent_pos, ball_pos, ball_shape, ball_y_pos)
-                action = agent.choose_action(enriched_state)
-            else:
-                agent_pos = state['agent_position']
-                ball_pos = state['ball_position']
-                ball_shape = state['ball_shape']
-                enriched_state = (agent_pos, ball_pos, ball_shape)
-                action = agent.choose_action(enriched_state)
-
-            next_state, reward, done, _ = env.step(action)
+            agent_pos = state['agent_position']
+            ball_pos = state['ball_position']
+            ball_shape = state['ball_shape']
+            enriched_state = (agent_pos, ball_pos, ball_shape)
+            action = agent_without_ontology.choose_action(enriched_state)
+            next_state, reward, done, _ = env_without_ontology.step(action)
             state = next_state
+            total_reward += reward
+            env_without_ontology.render()
+        logging.info(f"Total Reward: {total_reward}\n")
 
-        # Append final state
-        state_record = state.copy()
-        state_record['ball_y_position'] = env.ball_y_position
-        history.append(state_record)
+    logging.info("Testing the Ontology-Enhanced Agent (With Ontology)...")
+    for ep in range(1, test_episodes + 1):
+        state = env_with_ontology.reset()
+        done = False
+        total_reward = 0
+        logging.info(f"Test Episode {ep}:")
+        while not done:
+            agent_pos = state['agent_position']
+            ball_pos = state['ball_position']
+            ball_shape = state['ball_shape']
+            ball_y_pos = env_with_ontology.ball_y_position
+            enriched_state = (agent_pos, ball_pos, ball_shape, ball_y_pos)
+            action = agent_with_ontology.choose_action(enriched_state)
+            next_state, reward, done, _ = env_with_ontology.step(action)
+            state = next_state
+            total_reward += reward
+            env_with_ontology.render()
+        logging.info(f"Total Reward: {total_reward}\n")
 
-        return history
-
-    # Testing and creating GIFs
-    # Test Standard Agent
-    logging.info("\nTesting the Standard Agent (Without Ontology) and creating GIF...")
-    test_history_standard = run_test_episode_record_history(agent_without_ontology, env_without_ontology, use_ontology=False)
-    anim_standard = create_animation(test_history_standard, agent_type='Standard Agent')
-    # Save the animation as a GIF using Pillow
-    try:
-        anim_standard.save(gif_standard_path, writer='pillow', fps=2)
-        logging.info(f"Standard Agent GIF saved to {gif_standard_path}")
-    except Exception as e:
-        logging.error(f"Failed to save Standard Agent GIF: {e}")
-
-    # Test Ontology-Enhanced Agent
-    logging.info("\nTesting the Ontology-Enhanced Agent (With Ontology) and creating GIF...")
-    test_history_ontology = run_test_episode_record_history(agent_with_ontology, env_with_ontology, use_ontology=True)
-    anim_ontology = create_animation(test_history_ontology, agent_type='Ontology-Enhanced Agent')
-    # Save the animation as a GIF using Pillow
-    try:
-        anim_ontology.save(gif_ontology_path, writer='pillow', fps=2)
-        logging.info(f"Ontology-Enhanced Agent GIF saved to {gif_ontology_path}")
-    except Exception as e:
-        logging.error(f"Failed to save Ontology-Enhanced Agent GIF: {e}")
-
-    logging.info("\nTraining and testing completed.")
-
+    logging.info("Training and testing completed.")
 
 if __name__ == "__main__":
     main()
